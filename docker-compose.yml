@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  ml-api:
+    build: ./ml-api
+    ports:
+      - "8000:8000"
+    container_name: ml-api
+    restart: unless-stopped
+
+  property-estimator:
+    build: ./property-estimator
+    ports:
+      - "8001:8001"
+    container_name: property-estimator
+    environment:
+      - ML_API_URL=http://ml-api:8000
+    depends_on:
+      - ml-api
+    restart: unless-stopped
+
+  market-analysis:
+    build: ./market-analysis
+    ports:
+      - "8002:8002"
+    container_name: market-analysis
+    environment:
+      - ml.api.url=http://ml-api:8000
+    depends_on:
+      - ml-api
+    restart: unless-stopped
+
+  portal:
+    build: ./portal
+    ports:
+      - "3000:3000"
+    container_name: portal
+    environment:
+      - NEXT_PUBLIC_ESTIMATOR_API=http://localhost:8001
+      - NEXT_PUBLIC_MARKET_API=http://localhost:8002
+      - NEXT_PUBLIC_ML_API=http://localhost:8000
+    depends_on:
+      - property-estimator
+      - market-analysis
+    restart: unless-stopped
