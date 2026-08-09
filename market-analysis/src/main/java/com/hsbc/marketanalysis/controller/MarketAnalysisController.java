@@ -79,4 +79,19 @@ public class MarketAnalysisController {
                 .contentType(MediaType.parseMediaType("text/csv"))
                 .body(csv);
     }
+
+    @GetMapping("/export/pdf")
+    public ResponseEntity<byte[]> exportPdf(
+            @RequestParam(required = false) Integer minBedrooms,
+            @RequestParam(required = false) Integer maxBedrooms,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) Double minSchoolRating) {
+        List<Property> props = service.getProperties(minBedrooms, maxBedrooms, minPrice, maxPrice, minSchoolRating, "id", "asc");
+        byte[] pdf = service.exportPdf(props);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=properties.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
 }

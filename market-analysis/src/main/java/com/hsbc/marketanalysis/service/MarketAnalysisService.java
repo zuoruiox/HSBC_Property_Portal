@@ -3,9 +3,19 @@ package com.hsbc.marketanalysis.service;
 import com.hsbc.marketanalysis.client.MlApiClient;
 import com.hsbc.marketanalysis.dto.*;
 import com.hsbc.marketanalysis.model.Property;
+import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.TextAlignment;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -140,5 +150,48 @@ public class MarketAnalysisService {
                     p.getSchoolRating(), p.getPrice()));
         }
         return sb.toString();
+    }
+
+    public byte[] exportPdf(List<Property> properties) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PdfWriter writer = new PdfWriter(baos);
+        PdfDocument pdf = new PdfDocument(writer);
+        Document document = new Document(pdf);
+
+        document.add(new Paragraph("Property Market Analysis Report")
+                .setFontSize(18)
+                .setBold()
+                .setTextAlignment(TextAlignment.CENTER)
+                .setMarginBottom(10));
+
+        MarketStats stats = getMarketStats();
+        document.add(new Paragraph(String.format(
+                "Total Properties: %d | Average Price: $%,.0f | Price Range: $%,.0f - $%,.0f",
+                stats.getTotalProperties(), stats.getAvgPrice(), stats.getMinPrice(), stats.getMaxPrice()))
+                .setFontSize(10)
+                .setTextAlignment(TextAlignment.CENTER)
+                .setMarginBottom(15));
+
+        float[] colWidths = {40, 70, 50, 55, 55, 60, 80, 65, 70};
+        Table table = new Table(colWidths);
+        String[] headers = {"ID", "Sq Ft", "Beds", "Baths", "Year", "Lot Size", "Dist to City", "School", "Price"};
+        for (String h : headers) {
+            table.addHeaderCell(new Cell().add(new Paragraph(h).setFontSize(8).setBold())
+                    .setBackgroundColor(ColorConstants.LIGHT_GRAY).setTextAlignment(TextAlignment.CENTER));
+        }
+        for (Property p : properties) {
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(p.getId())).setFontSize(7)).setTextAlignment(TextAlignment.CENTER));
+            table.addCell(new Cell().add(new Paragraph(String.format("%.0f", p.getSquareFootage())).setFontSize(7)).setTextAlignment(TextAlignment.CENTER));
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(p.getBedrooms())).setFontSize(7)).setTextAlignment(TextAlignment.CENTER));
+            table.addCell(new Cell().add(new Paragraph(String.format("%.1f", p.getBathrooms())).setFontSize(7)).setTextAlignment(TextAlignment.CENTER));
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(p.getYearBuilt())).setFontSize(7)).setTextAlignment(TextAlignment.CENTER));
+            table.addCell(new Cell().add(new Paragraph(String.format("%.0f", p.getLotSize())).setFontSize(7)).setTextAlignment(TextAlignment.CENTER));
+            table.addCell(new Cell().add(new Paragraph(String.format("%.1f mi", p.getDistanceToCityCenter())).setFontSize(7)).setTextAlignment(TextAlignment.CENTER));
+            table.addCell(new Cell().add(new Paragraph(String.format("%.1f", p.getSchoolRating())).setFontSize(7)).setTextAlignment(TextAlignment.CENTER));
+            table.addCell(new Cell().add(new Paragraph(String.format("$%,.0f", p.getPrice())).setFontSize(7)).setTextAlignment(TextAlignment.RIGHT));
+        }
+        document.add(table);
+        document.close();
+        return baos.toByteArray();
     }
 }
