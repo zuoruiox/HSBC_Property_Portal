@@ -6,7 +6,7 @@ FastAPI backend for the Property Value Estimator application. Handles form submi
 
 - Python 3.12+
 - FastAPI
-- httpx (for ML API communication)
+- httpx (async HTTP client for ML API communication)
 - Pydantic v2 (data validation)
 
 ## Quick Start
@@ -79,12 +79,30 @@ curl -X POST http://localhost:8001/estimate \
 }
 ```
 
+## Input Validation
+
+All property features are validated via Pydantic models with the same constraints as the ML API:
+
+| Field | Type | Constraint |
+|-------|------|------------|
+| square_footage | float | > 0 |
+| bedrooms | int | ≥ 0 |
+| bathrooms | float | ≥ 0 |
+| year_built | int | 1800-2026 |
+| lot_size | float | > 0 |
+| distance_to_city_center | float | ≥ 0 |
+| school_rating | float | 0-10 |
+| property_name | string | Optional, defaults to "Untitled Property" |
+
 ## Features
 
-- **Data Validation**: Pydantic models validate all input fields with appropriate constraints
-- **Error Handling**: Graceful error responses when ML service is unavailable
-- **History Tracking**: In-memory storage of all estimations (for demo purposes)
-- **CORS Enabled**: Configured to allow cross-origin requests from the frontend
+- **Data Validation**: Pydantic models validate all input fields with appropriate constraints (type, range, required fields)
+- **Error Handling**: Graceful error responses when ML service is unavailable (503 Service Unavailable)
+- **History Tracking**: In-memory storage of all estimations with auto-incrementing IDs (for demo purposes)
+- **Batch Estimation**: Submit multiple properties in a single request
+- **Property Comparison**: Compare up to 10 properties by ID with side-by-side results
+- **CORS Enabled**: Configured to allow cross-origin requests from the frontend portal
+- **Async API Calls**: Uses httpx AsyncClient for non-blocking communication with the ML API
 
 ## Interactive Docs
 
