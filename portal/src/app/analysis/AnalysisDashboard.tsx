@@ -52,7 +52,10 @@ interface InitialData {
 
 const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"];
 
-const formatPrice = (p: number) => `$${p.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+const formatPrice = (p: number | undefined) => {
+  if (p == null) return "";
+  return `$${p.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+};
 
 export default function AnalysisDashboard({ initialData }: { initialData: InitialData }) {
   const [stats] = useState<MarketStats | null>(initialData.stats);
@@ -172,7 +175,7 @@ export default function AnalysisDashboard({ initialData }: { initialData: Initia
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie data={priceDistData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  label={({ name, percent }: any) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
                   {priceDistData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Tooltip />
@@ -191,8 +194,8 @@ export default function AnalysisDashboard({ initialData }: { initialData: Initia
               <BarChart data={priceByBedsData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="bedrooms" />
-                <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(value: number) => formatPrice(value)} />
+                <YAxis tickFormatter={(v: any) => `$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(value: any) => formatPrice(value as number)} />
                 <Bar dataKey="avgPrice" fill="#10B981" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

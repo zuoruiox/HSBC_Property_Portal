@@ -118,7 +118,10 @@ export default function EstimatorPage() {
     });
   };
 
-  const formatPrice = (p: number) => `$${p.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  const formatPrice = (p: number | undefined) => {
+    if (p == null) return "";
+    return `$${p.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+  };
 
   const chartData = history.slice(-10).map((h) => ({
     name: h.property_name.length > 12 ? h.property_name.slice(0, 12) + "..." : h.property_name,
@@ -326,8 +329,8 @@ export default function EstimatorPage() {
                       ]}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                        <Tooltip formatter={(value: number) => formatPrice(value)} />
+                        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: any) => `$${(v / 1000).toFixed(0)}k`} />
+                        <Tooltip formatter={(value: any) => formatPrice(value as number)} />
                         <Bar dataKey="price" radius={[4, 4, 0, 0]}>
                           {chartData.map((_, i) => <Cell key={i} fill="#93C5FD" />)}
                           <Cell fill="#10B981" />
@@ -351,8 +354,8 @@ export default function EstimatorPage() {
                   <BarChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(value: number) => formatPrice(value)} />
+                    <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: any) => `$${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip formatter={(value: any) => formatPrice(value as number)} />
                     <Bar dataKey="price" fill="#3B82F6" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -467,8 +470,8 @@ export default function EstimatorPage() {
                   <BarChart data={compareData.map((h) => ({ name: h.property_name, price: Math.round(h.predicted_price) }))}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
-                    <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(value: number) => formatPrice(value)} />
+                    <YAxis tickFormatter={(v: any) => `$${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip formatter={(value: any) => formatPrice(value as number)} />
                     <Bar dataKey="price" radius={[4, 4, 0, 0]}>
                       {compareData.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
