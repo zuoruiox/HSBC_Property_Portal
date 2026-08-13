@@ -1,18 +1,18 @@
-FROM node:20-alpine AS deps
+FROM docker.1ms.run/library/node:20-alpine AS deps
 WORKDIR /app
 # Use Chinese mirror for npm
 RUN npm config set registry https://registry.npmmirror.com
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-FROM node:20-alpine AS builder
+FROM docker.1ms.run/library/node:20-alpine AS builder
 WORKDIR /app
 RUN npm config set registry https://registry.npmmirror.com
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM docker.1ms.run/library/node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/public ./public

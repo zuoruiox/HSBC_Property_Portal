@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   ml-api:
     build: ./ml-api
@@ -7,6 +5,11 @@ services:
       - "8000:8000"
     container_name: ml-api
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   property-estimator:
     build: ./property-estimator
@@ -16,8 +19,14 @@ services:
     environment:
       - ML_API_URL=http://ml-api:8000
     depends_on:
-      - ml-api
+      ml-api:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   market-analysis:
     build: ./market-analysis
@@ -27,7 +36,8 @@ services:
     environment:
       - ml.api.url=http://ml-api:8000
     depends_on:
-      - ml-api
+      ml-api:
+        condition: service_healthy
     restart: unless-stopped
 
   portal:
@@ -39,7 +49,12 @@ services:
       - NEXT_PUBLIC_ESTIMATOR_API=http://localhost:8001
       - NEXT_PUBLIC_MARKET_API=http://localhost:8002
       - NEXT_PUBLIC_ML_API=http://localhost:8000
+      - SERVER_ESTIMATOR_API=http://property-estimator:8001
+      - SERVER_MARKET_API=http://market-analysis:8002
+      - SERVER_ML_API=http://ml-api:8000
     depends_on:
-      - property-estimator
-      - market-analysis
+      property-estimator:
+        condition: service_healthy
+      market-analysis:
+        condition: service_started
     restart: unless-stopped

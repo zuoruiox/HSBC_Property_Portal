@@ -3,6 +3,7 @@ import pickle
 import os
 from typing import List
 
+import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 import pandas as pd
@@ -18,11 +19,18 @@ MODEL_PATH = os.path.join(os.path.dirname(__file__), "model.pkl")
 with open(MODEL_PATH, "rb") as f:
     model_data = pickle.load(f)
 
-model = model_data["model"]
+coefs = np.array(model_data["coefs"], dtype=float)
+intercept = float(model_data["intercept"])
 feature_names = model_data["feature_names"]
 metrics = model_data["metrics"]
 coefficients = model_data["coefficients"]
-intercept = model_data["intercept"]
+model_type = model_data.get("model_type", "Linear Regression")
+
+
+def predict(features_df: pd.DataFrame) -> float:
+    """Predict using stored coefficients: y = X @ coefs + intercept."""
+    X = features_df[feature_names].values.astype(float)
+    return float(X @ coefs + intercept)
 
 
 class HouseFeatures(BaseModel):
@@ -60,16 +68,16 @@ class ModelInfoResponse(BaseModel):
 @app.get("/health", tags=["Health"])
 def health_check():
     """Simple health check endpoint."""
-    return {"status": "healthy", "model_loaded": model is not None}
+    return {"status": "healthy", "model_loaded": coefs is not None}
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Prediction"])
 def predict_single(house: HouseFeatures):
     """Predict price for a single house."""
     try:
-        df = pd.DataFrame([house.model_dump()])[feature_names]
-        prediction = model.predict(df)[0]
-        return PredictionResponse(predicted_price=round(float(prediction), 2))
+        df = pd.DataFrame([house.model_dump()])
+        prediction = predict(df)
+        return PredictionResponse(predicted_price=round(prediction, 2))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
@@ -78,8 +86,9 @@ def predict_single(house: HouseFeatures):
 def predict_batch(batch: BatchHouseFeatures):
     """Predict prices for a batch of houses."""
     try:
-        df = pd.DataFrame([h.model_dump() for h in batch.houses])[feature_names]
-        predictions = model.predict(df)
+        df = pd.DataFrame([h.model_dump() for h in batch.houses])
+        X = df[feature_names].values.astype(float)
+        predictions = X @ coefs + intercept
         return BatchPredictionResponse(predictions=[round(float(p), 2) for p in predictions])
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Batch prediction error: {str(e)}")
@@ -89,7 +98,7 @@ def predict_batch(batch: BatchHouseFeatures):
 def model_info():
     """Return model coefficients and performance metrics."""
     return ModelInfoResponse(
-        model_type="Linear Regression",
+        model_type=model_type,
         features=feature_names,
         coefficients=coefficients,
         intercept=intercept,
